@@ -1,1 +1,1 @@
-# Matem-ticas-Avanzadas-para-Computaci-n
+# Matemáticas-Avanzadas-para-Computación
