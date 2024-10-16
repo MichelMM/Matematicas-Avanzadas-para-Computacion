@@ -21,7 +21,7 @@ dictionary = {
     "Spanish":set(),
 }
 
-df = pd.read_csv(r'./text/Language Detection.csv')
+df = pd.read_csv(r'./data/Language Detection.csv')
 
 for i, row in df.iterrows():
     text = row["Text"]
