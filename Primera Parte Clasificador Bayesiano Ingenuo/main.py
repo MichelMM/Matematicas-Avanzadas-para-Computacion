@@ -16,7 +16,15 @@ def text_to_set(currSet,text):
     return currSet
 
 #Bayes con suavizado de laplace, regresar el resultado mayor
-        
+
+
+#Matriz de confusión
+
+
+#Gráfico de la superficie de Desición
+
+
+#Transformación de csv a diccionario almacenado en Sets
 dictionary = {
     "French":set(),
     "English":set(),
@@ -32,6 +40,10 @@ for i, row in df.iterrows():
         if language == key:
             text_to_set(dictionary[key],text)
 #transformar set a lista, Ordenamiento de palabras en cada disccionario
+
+
+#interfaz de usuario para recibir y procesar datos
+
 
 
 
