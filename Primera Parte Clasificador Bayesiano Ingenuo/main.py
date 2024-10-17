@@ -14,6 +14,8 @@ def text_to_set(currSet,text):
     for e in words:
         currSet.add(e)
     return currSet
+
+#Bayes con suavizado de laplace, regresar el resultado mayor
         
 dictionary = {
     "French":set(),
@@ -29,3 +31,7 @@ for i, row in df.iterrows():
     for key in dictionary:
         if language == key:
             text_to_set(dictionary[key],text)
+#transformar set a lista, Ordenamiento de palabras en cada disccionario
+
+
+
