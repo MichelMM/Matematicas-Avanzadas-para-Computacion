@@ -88,6 +88,43 @@ def text_to_list(text):
 
 
 #Bayes con suavizado de laplace, regresar el resultado mayor
+def naive_Bayesian_classifier(text,dictionary):
+    tempDict = {}
+    N = 0
+    marginal_probability = 0
+    for key in dictionary:
+        tempDict[key] = [1]
+        tempDict[key].append(sizeHashList(dictionary[key]))
+        N+= tempDict[key][0]
+    
+    words = text_to_list(text)
+    #Laplace Smoothing
+    for word in words:
+        for key in tempDict:
+            laplaceSmoothing = 0
+            if hashSearch(dictionary[key],word):
+                laplaceSmoothing +=1
+            laplaceSmoothing = (laplaceSmoothing + 1)/(N+tempDict[key][1])
+            tempDict[key][0] *= laplaceSmoothing
+    #Marginal Probability
+    for key in tempDict:
+        marginal_probability += tempDict[key][0]*(tempDict[key][1]/N)
+    
+    #Posterior probability
+    for key in tempDict:
+        posterior_probability = (tempDict[key][0]*tempDict[key][1]/N)/marginal_probability
+        tempDict[key].append(posterior_probability)
+        print(posterior_probability)
+    
+    result = 0
+    language = ""
+    for key in tempDict:
+        if result < tempDict[key][2]:
+            result = tempDict[key][2]
+            language = key
+
+    return language
+
 
 
 #Matriz de confusión
@@ -118,3 +155,17 @@ for key in dictionary:
     dictionary[key] = createHashList(dictionary[key])
 
 #interfaz de usuario para recibir y procesar datos
+phrases = [
+    "The sun sets in the west.",
+    "Friendship is a treasure.",
+    "Dreams can come true.",
+    "El sol se pone en el oeste.",
+    "La amistad es un tesoro.",
+    "Los sueños pueden hacerse realidad.",
+    "Le soleil se couche à l'ouest.",
+    "L'amitié est un trésor.",
+    "Les rêves peuvent devenir réalité."
+]
+
+for e in phrases:
+    print(naive_Bayesian_classifier(e,dictionary))
