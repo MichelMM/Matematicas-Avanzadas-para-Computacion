@@ -89,38 +89,53 @@ def text_to_list(text):
 
 #Bayes con suavizado de laplace, regresar el resultado mayor
 def naive_Bayesian_classifier(text,dictionary):
-    tempDict = {}
-    N = 0
-    marginal_probability = 0
-    for key in dictionary:
-        tempDict[key] = [1]
-        tempDict[key].append(sizeHashList(dictionary[key]))
-        N+= tempDict[key][0]
     
     words = text_to_list(text)
+    
+    relevantData = {}
+    size = "size"
+    class_prior = "class prior"
+    laplace_smoothing = "laplace smoothing"
+    posterior_probability = "posterior probability"
+
+    N = 0
+    marginal_probability = 0
+
+    #set new values to use as relevant data and set size in it
+    for key in dictionary:
+        relevantData[key]={
+            size:sizeHashList(dictionary[key]),
+            class_prior:0,
+            laplace_smoothing:1,
+            posterior_probability:0
+        }
+        N += relevantData[key][size]
+        
+    for key in relevantData:
+        relevantData[key][class_prior] = relevantData[key][size] / N
+
+    
     #Laplace Smoothing
     for word in words:
-        for key in tempDict:
-            laplaceSmoothing = 0
+        for key in relevantData:
+            exists = 0
             if hashSearch(dictionary[key],word):
-                laplaceSmoothing +=1
-            laplaceSmoothing = (laplaceSmoothing + 1)/(N+tempDict[key][1])
-            tempDict[key][0] *= laplaceSmoothing
+                exists +=1
+            relevantData[key][laplace_smoothing] *= (exists + 1)/(N+relevantData[key][size])
     #Marginal Probability
-    for key in tempDict:
-        marginal_probability += tempDict[key][0]*(tempDict[key][1]/N)
+    for key in relevantData:
+        marginal_probability += relevantData[key][laplace_smoothing]*relevantData[key][class_prior]
     
     #Posterior probability
-    for key in tempDict:
-        posterior_probability = (tempDict[key][0]*tempDict[key][1]/N)/marginal_probability
-        tempDict[key].append(posterior_probability)
-        print(posterior_probability)
+    for key in relevantData:
+        relevantData[key][posterior_probability] = (relevantData[key][laplace_smoothing]*relevantData[key][class_prior])/marginal_probability
+        print(relevantData[key][posterior_probability])
     
     result = 0
     language = ""
-    for key in tempDict:
-        if result < tempDict[key][2]:
-            result = tempDict[key][2]
+    for key in relevantData:
+        if result < relevantData[key][posterior_probability]:
+            result = relevantData[key][posterior_probability]
             language = key
 
     return language
