@@ -16,7 +16,7 @@ class PalabraInput(BaseModel):
 
 @app.post("/identificar")
 def detectar_idioma(input: PalabraInput):
-    idioma = predictor(input.palabra)
+    idioma = predictor.predict(input.palabra)
     return {
         "idioma": idioma,
         #"probabilidad": f"{probabilidad * 100:.2f}%"  # Convertimos la probabilidad a porcentaje

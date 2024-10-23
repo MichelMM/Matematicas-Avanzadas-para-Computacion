@@ -1,15 +1,15 @@
 import re
 import pandas as pd
+import numpy as np
 from copy import deepcopy
 import matplotlib.pyplot as plt
 import seaborn as sns
 from matplotlib.colors import ListedColormap
+import matplotlib.ticker as ticker
 
 maxsize = 5000
 test_size = 0.1
-
-path = './data/languageDetection.csv'
-df = pd.read_csv(path)
+labels = ['French', 'English', 'Spanish']
 
 class WordNode:
     """
@@ -189,7 +189,7 @@ class naivebayesClassifier:
         self.posterior_probability = "posterior probability"
         self.N = 0
         self.marginal_probability = 0
-        
+
     def generateProbabilityDict(self):
         """
         Generate a probability dictionary
@@ -205,18 +205,16 @@ class naivebayesClassifier:
                 self.posterior_probability:0
             }
             self.N += self.relevantData[key][self.size]
-            
+
         for key in self.relevantData:
             self.relevantData[key][self.class_prior] = \
                 self.relevantData[key][self.size] / self.N
 
-    def predict(self, text):
+    def predict(self, text=None, return_probabilites=False):
         """
         Predict in wich language the text is.
-
         Args:
             text (str): text to be recognized.
-
         Returns:
             language(str): Language of the text.
         """
@@ -236,22 +234,27 @@ class naivebayesClassifier:
         for key in tmpRelevantData:
             self.marginal_probability += tmpRelevantData[key][self.laplace_smoothing]*\
                         tmpRelevantData[key][self.class_prior]
-        
+
         #Posterior probability
         for key in tmpRelevantData:
             tmpRelevantData[key][self.posterior_probability] =\
                                     (tmpRelevantData[key][self.laplace_smoothing]* \
                                     tmpRelevantData[key][self.class_prior])/self.marginal_probability
-    
+            print(tmpRelevantData[key][self.posterior_probability])
+                
         result = 0
         language = ""
         for key in tmpRelevantData:
             if result < tmpRelevantData[key][self.posterior_probability]:
                 result = tmpRelevantData[key][self.posterior_probability]
                 language = key
-
-        return language
-        
+        if return_probabilites:
+            posterior = tmpRelevantData[language][self.posterior_probability]
+            prior = tmpRelevantData[language][self.class_prior]
+            return language, posterior, prior
+        else:
+            return language
+    
         
 
 def split_data(diccionary):
@@ -264,10 +267,10 @@ def split_data(diccionary):
     Returns:
         tuple: tuple that contains splitted samples.
     """
-    train_dictionary = test_dictionary = {key: [] for key in dictionary.keys()}
+    train_dictionary = test_dictionary = {key: [] for key in diccionary.keys()}
      
-    for key in dictionary.keys():
-        tmp_list = dictionary[key]
+    for key in diccionary.keys():
+        tmp_list = diccionary[key]
         size = len(tmp_list)
         test_samples_size = round(size * test_size)
         test_samples = tmp_list[:test_samples_size]
@@ -277,7 +280,6 @@ def split_data(diccionary):
 
     return train_dictionary, test_dictionary
 
-
 def get_predictions(df):
     """
     Functions to predict on the app.
@@ -285,6 +287,11 @@ def get_predictions(df):
     Args:
         df (dataframe): dataframe to train model.
     """
+    dictionary = {
+        "French":[],
+        "English":[],
+        "Spanish":[],
+    }
 
     for i, row in df.iterrows():
         text = row["Text"]
@@ -326,9 +333,7 @@ def generateConfusionMatrix(test_dict, model):
 
     true_values = [new_test_dict[text] for text in new_test_dict.keys()]
     predicted_values = [model.predict(text) for text 
-                        in new_test_dict.keys()]
-
-    labels = ['French', 'English', 'Spanish']
+                        in new_test_dict.keys() if model.predict(text)]
 
     confusion_matrix = [[0 for i in range(3)] for i in range(3)]
 
@@ -347,11 +352,53 @@ def generateConfusionMatrix(test_dict, model):
 
 #Gráfico de la superficie de Desición
 
-def generateSurfaceDecisionPlot():
+def generateSurfaceDecisionPlot(model,  test_dict):
     """
     Generate a surface sample plot.
     """
-    pass
+    words_list = []
+    languages = []
+    posteriors = []
+    priors = []
+
+    languages_dict = {l:ix for ix,l in enumerate(labels)}
+    
+    
+    for language in labels:
+        tmp_dict = test_dict[language]
+        c = 0
+        while c < 100:
+            for word in tmp_dict:
+                words_list.append(word)
+                c+=1
+    
+    
+    for word in words_list:
+        language, posterior, prior = model.predict(word, return_probabilites=True)
+        languages.append(language)
+        posteriors.append(posterior)
+        priors.append(prior)
+    languages_num = [languages_dict[l] for l in languages]
+        
+    cmap_light = ListedColormap(['#FFAAAA', '#AAFFAA', '#AAAAFF'])
+
+    plt.figure(figsize=(20,15))
+    scatter = plt.scatter(posteriors, priors, c=languages_num, 
+                cmap=cmap_light, edgecolor='k', s=500, alpha=0.3)
+
+    plt.title('Surface decision plot', fontsize=20)
+    plt.xlabel('Prior probability', fontsize=18)
+    plt.ylabel('Posterior probability', fontsize=18)
+
+    cbar = plt.colorbar(scatter, ticks=[0, 1, 2])  # Los ticks son 0, 1, y 2
+    cbar.set_label('Language', fontsize=18)
+
+    # Modificar los ticks de la barra de colores para mostrar los idiomas
+    cbar.ax.yaxis.set_major_formatter(ticker.FixedFormatter(['French', 'English', 'Spanish']))
+    plt.savefig('surfaceDecisionPlot.pdf')
+    
+    
+    
 
 if __name__ == '__main__':
     
@@ -378,13 +425,14 @@ if __name__ == '__main__':
 
     hashed_dictionary = {}
 
-    for key in train_dictionary:
+    for key in train_dictionary.keys():
         hashed_dictionary[key] = createHashList(train_dictionary[key])
 
     nbc = naivebayesClassifier(hashed_dictionary)
     nbc.generateProbabilityDict()
 
     generateConfusionMatrix(test_dictionary, nbc)
+    generateSurfaceDecisionPlot(model=nbc, test_dict=test_dictionary)
     #interfaz de usuario para recibir y procesar datos
     phrases = [
         "The sun sets in the west.",
